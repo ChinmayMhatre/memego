@@ -54,6 +54,7 @@ const MapBox: React.FC = () => {
     });
   };
 
+  console.log({ currentPosition });
   const { authenticated, ready, logout, user } = usePrivy();
   const walletAddress = user?.wallet?.address;
 
@@ -221,10 +222,14 @@ const MapBox: React.FC = () => {
 
             coinsLocation.forEach((location, index) => {
               const el = document.createElement("div");
-              const width = 40; // Customize marker size
+              const width = 40;
               const height = 40;
               el.className = "marker";
-              el.style.backgroundImage = `url(https://picsum.photos/seed/coin-${index}/40/40)`; // Replace with your coin icon URL
+              if (location.type === "size") {
+                el.style.backgroundImage = `url(https://firebasestorage.googleapis.com/v0/b/bgc-inside-out.appspot.com/o/memego%2Fsize.svg?alt=media&token=aaf15c74-dfad-4299-a446-8682456d3e27)`; // Replace with your coin icon URL
+              } else {
+                el.style.backgroundImage = `url(https://firebasestorage.googleapis.com/v0/b/bgc-inside-out.appspot.com/o/memego%2Fboop.svg?alt=media&token=31a25702-0bf0-4015-a911-6d2cf13dcf26)`; // Replace with your coin icon URL
+              }
               el.style.width = `${width}px`;
               el.style.height = `${height}px`;
               el.style.backgroundSize = "100%";
@@ -323,7 +328,7 @@ const MapBox: React.FC = () => {
     if (nearestCoin) {
       const coin = coinsLocation[nearestCoin.index];
       console.log({ coin, nearestCoin });
-      navigate("/ar", {
+      navigate("/collect-coin", {
         state: {
           coin: {
             index: nearestCoin.index,

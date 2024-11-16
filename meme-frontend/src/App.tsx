@@ -13,9 +13,8 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Mapbox />} />
-        <Route path="/ar" element={<AR />} />
+        <Route path="/collect-coin" element={<AR />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/ar2" element={<ArWindow />} />
       </Routes>
     </BrowserRouter>
   );

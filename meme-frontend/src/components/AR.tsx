@@ -6,9 +6,13 @@ import { Entity, Scene } from "aframe-react";
 import { useLocation } from "react-router-dom";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { storage } from "../../firebase";
+import { usePrivy } from "@privy-io/react-auth";
 
 const AR = () => {
   const { coin, userPosition, distance } = useLocation();
+  const { user } = usePrivy();
+  const walletAddress = user?.wallet?.address;
+
   const [clicking, setClicking] = useState<boolean>(false);
 
   const [clickedImage, setClickedImage] = useState({
@@ -110,7 +114,7 @@ const AR = () => {
   const handleUpload = async () => {
     try {
       setUploading(true);
-      const url = `uploads/${coin}.png`;
+      const url = `memego/${coin}.png`;
       const storageRef = ref(storage, url);
 
       const uploadData = await uploadString(
@@ -121,34 +125,24 @@ const AR = () => {
       const uploadedUrl = await getDownloadURL(uploadData.ref);
       console.log({ uploadedUrl });
 
-      // const payload = {
-      //   teamId: teamData?.id,
-      //   sessionId: sessionData?.sessionName,
-      //   playerName: playerData?.name,
-      //   gameType: gameData?.levelType,
-      //   score: gameData?.uploadPoints ?? 0,
-      //   skipped: false,
-      //   uploadUrl: uploadedUrl,
-      //   mediaType: "image/png",
-      //   gameIndex: gameData?.arIndex,
-      //   gameName: gameData?.levelName,
-      //   sessionType:
-      //     sessionData?.loginScreenData?.sessionType ?? "normal_team_session",
-      //   isARGame: true,
-      // };
+      const payload = {
+        coin: coin,
+        uploadUrl: uploadedUrl,
+        walletAddress: walletAddress,
+      };
 
-      // const response = await fetch(`${clientUrl}/score`, {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify(payload),
-      // });
-      // const result = await response.json();
+      const response = await fetch(`https://memego.onrender.com/api/score`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
 
-      // if (response.status !== 201) {
-      //   throw new Error(result.message);
-      // }
+      if (response.status !== 201) {
+        throw new Error(result.message);
+      }
 
       alert("Uploaded Successfully");
       setUploading(false);
@@ -194,8 +188,11 @@ const AR = () => {
               <Entity primitive="a-assets">
                 <img
                   id="logo1"
+                  // src={
+                  //   "https://firebasestorage.googleapis.com/v0/b/bgc-inside-out.appspot.com/o/memego%2Fboop.svg?alt=media&token=31a25702-0bf0-4015-a911-6d2cf13dcf26"
+                  // }
                   src={
-                    "https://cdn-icons-png.flaticon.com/512/4964/4964814.png"
+                    "https://firebasestorage.googleapis.com/v0/b/bgc-inside-out.appspot.com/o/memego%2Fsize.svg?alt=media&token=aaf15c74-dfad-4299-a446-8682456d3e27"
                   }
                   preload="auto"
                   crossOrigin="anonymous"
@@ -207,7 +204,7 @@ const AR = () => {
                 src="#logo1"
                 width={10}
                 height={10}
-                position={`${-2} ${-10} ${-20}`}
+                position={`${-2} ${0} ${-20}`}
                 visible={`true`}
               ></Entity>
             </Scene>
@@ -246,7 +243,7 @@ const AR = () => {
         >
           {!clickedImage.visible ? (
             <button
-              style={{ backgroundColor: "red", padding: "5px 20px" }}
+              className="bg-red-500 text-white px-4 py-2 rounded-md font-bold text-3xl"
               onClick={captureImage}
             >
               Capture
@@ -254,13 +251,13 @@ const AR = () => {
           ) : (
             <>
               <button
-                style={{ backgroundColor: "red", padding: "5px 20px" }}
+                className="bg-red-500 text-white px-4 py-2 rounded-md font-bold text-3xl"
                 onClick={handleRetake}
               >
                 Discard
               </button>
               <button
-                style={{ backgroundColor: "red", padding: "5px 20px" }}
+                className="bg-red-500 text-white px-4 py-2 rounded-md font-bold text-3xl"
                 onClick={handleUpload}
               >
                 Get The Coin
