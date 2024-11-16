@@ -1,10 +1,11 @@
 /* eslint-disable */
-import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { Threebox } from "threebox-plugin";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { calculateDistance } from "../utils/calculateDistance";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { usePrivy } from "@privy-io/react-auth";
 import { useNavigate } from "react-router-dom";
 
 declare global {
@@ -13,25 +14,13 @@ declare global {
   }
 }
 
-const coinsLocation = [
-  { latitude: 13.72422723058762, longitude: 100.5697524465102 },
-  { latitude: 13.72468766448428, longitude: 100.56903491809813 },
-  { latitude: 13.72458532725041, longitude: 100.56852505583701 },
-  { latitude: 13.724641925017927, longitude: 100.56824539763845 },
-  { latitude: 13.724853056318187, longitude: 100.56899776075737 },
-  { latitude: 13.724616395890703, longitude: 100.56975040754529 },
-  { latitude: 13.724689722402964, longitude: 100.56893066241489 },
-  { latitude: 13.724655859899556, longitude: 100.56836950156654 },
-  { latitude: 13.72431484938172, longitude: 100.56875286942949 },
-  { latitude: 13.725334647038743, longitude: 100.56882652931839 },
-];
-
 const MapBox: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const userModelRef = useRef<any>(null);
   const locationWatchId = useRef<number | null>(null);
   const navigate = useNavigate();
+  const [coinsLocation, setCoinsLocation] = useState<any[]>([]);
 
   const [nearestCoin, setNearestCoin] = useState<{
     distance: number;
@@ -63,6 +52,57 @@ const MapBox: React.FC = () => {
       distance: minDistance,
       index: nearestIndex,
     });
+  };
+
+  const { authenticated, ready, logout, user } = usePrivy();
+  const walletAddress = user?.wallet?.address;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch user data
+        const userResponse = await fetch(
+          `https://memego.onrender.com/api/users/snos1d`
+        );
+        const userData = await userResponse.json();
+        console.log(userData?.userData);
+        const userClaimedPoints = userData?.userData?.claimedPoints ?? [];
+
+        const sizeClaimedPoints = userClaimedPoints?.[0]?.points ?? [];
+        const boopClaimedPoints = userClaimedPoints?.[1]?.points ?? [];
+
+        const claimedPoints = [...sizeClaimedPoints, ...boopClaimedPoints];
+        const claimedPointIds = new Set(claimedPoints.map((point) => point.id));
+        console.log({ claimedPointIds });
+        // Fetch points data
+        const pointsResponse = await fetch(
+          "https://memego.onrender.com/api/points/"
+        );
+        const pointsData = await pointsResponse.json();
+        console.log({ pointsData });
+        // Filter out claimed points
+        const filteredPoints = pointsData.filter(
+          (point: any) => !claimedPointIds.has(point.id)
+        );
+
+        setCoinsLocation(filteredPoints);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, [walletAddress]);
+
+  useEffect(() => {
+    if (!authenticated && ready) {
+      navigate("/login");
+    }
+  }, [authenticated, ready, navigate]);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
   };
 
   const requestPermission1 = () => {
