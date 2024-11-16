@@ -4,7 +4,8 @@ import { getDb } from '../config/database';
 export const getPoints = async (req: Request, res: Response) => {
     // Get points from data json file and return them
     try {
-        const points = require('../data/points.json');
+        console.log('Fetching points');
+        const points = require('../../data/points.json');
         return res.status(200).json(points);
     } catch (error) {
         console.error('Error fetching points:', error);
