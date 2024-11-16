@@ -34,6 +34,11 @@ const Dashboard = () => {
     const navigate = useNavigate()
     const [userData, setUserData] = useState<UserData | null>(null)
 
+    const truncateAddress = (address: string) => {
+        if (!address) return '';
+        return `${address.slice(0, 4)}...${address.slice(-4)}`;
+    };
+
     useEffect(() => {
         if (!authenticated && ready) {
             navigate('/login')
@@ -66,9 +71,9 @@ const Dashboard = () => {
     }
 
     return (
-        <div className=' p-7  bg-gradient w-full'>
+        <div className=' p-7 h-screen bg-gradient w-full'>
             <div className="flex justify-between items-center">
-                <h1 className='text-xl font-bold text-white'>Welcome Back, <span className='text-blue-600 text-2xl '>{userData?.walletAddress || 'Loading...'}</span></h1>
+                <h1 className='text-md font-bold text-white'>Welcome Back, <span className='text-blue-600 text-2xl '>{userData ? truncateAddress(userData.walletAddress) : 'Loading...'}</span></h1>
                 <Button onClick={handleLogout} variant={'outline'}>
                     <LogOut className='w-4 h-4 text-black'/>
                 </Button>
@@ -87,10 +92,10 @@ const Dashboard = () => {
                             <div className="h-8 w-8 bg-green-400 rounded-full"></div>
                             <div className="flex flex-col">
                                 <p className=' font-bold'>{point.coinType}</p>
-                                <p className='text-sm text-gray-500'>{point.coinAddress}</p>
+                                <p className='text-sm text-gray-500'>{truncateAddress(point.coinAddress)}</p>
                             </div>
                         </div>
-                        <p className='text-sm text-blue-600 font-bold'>$100</p>
+                        <p className='text-sm text-blue-600 font-bold'>{point.points.length}</p>
                     </div>
                 ))}
                 {!userData?.claimedPoints?.length && (
