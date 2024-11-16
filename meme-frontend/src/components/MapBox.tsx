@@ -1,8 +1,11 @@
 /* eslint-disable */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { Threebox } from "threebox-plugin";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { calculateDistance } from "../utils/calculateDistance";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 
 declare global {
   interface Window {
@@ -11,11 +14,16 @@ declare global {
 }
 
 const coinsLocation = [
-  { latitude: 13.7260001, longitude: 100.5590001 },
-  { latitude: 13.7235005, longitude: 100.5575003 },
-  { latitude: 13.7253008, longitude: 100.5568006 },
-  { latitude: 13.7240002, longitude: 100.5602009 },
-  { latitude: 13.7238009, longitude: 100.5586004 },
+  { latitude: 13.72422723058762, longitude: 100.5697524465102 },
+  { latitude: 13.72468766448428, longitude: 100.56903491809813 },
+  { latitude: 13.72458532725041, longitude: 100.56852505583701 },
+  { latitude: 13.724641925017927, longitude: 100.56824539763845 },
+  { latitude: 13.724853056318187, longitude: 100.56899776075737 },
+  { latitude: 13.724616395890703, longitude: 100.56975040754529 },
+  { latitude: 13.724689722402964, longitude: 100.56893066241489 },
+  { latitude: 13.724655859899556, longitude: 100.56836950156654 },
+  { latitude: 13.72431484938172, longitude: 100.56875286942949 },
+  { latitude: 13.725334647038743, longitude: 100.56882652931839 },
 ];
 
 const MapBox: React.FC = () => {
@@ -23,6 +31,39 @@ const MapBox: React.FC = () => {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const userModelRef = useRef<any>(null);
   const locationWatchId = useRef<number | null>(null);
+  const navigate = useNavigate();
+
+  const [nearestCoin, setNearestCoin] = useState<{
+    distance: number;
+    index: number;
+  } | null>(null);
+  const [currentPosition, setCurrentPosition] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  const checkNearestCoin = (latitude: number, longitude: number) => {
+    let minDistance = 10;
+    let nearestIndex = -1;
+
+    coinsLocation.forEach((coin, index) => {
+      const distance = calculateDistance(
+        latitude,
+        longitude,
+        coin.latitude,
+        coin.longitude
+      );
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestIndex = index;
+      }
+    });
+
+    setNearestCoin({
+      distance: minDistance,
+      index: nearestIndex,
+    });
+  };
 
   const requestPermission1 = () => {
     if (
@@ -116,26 +157,49 @@ const MapBox: React.FC = () => {
               userModelRef.current = model;
             });
 
+            // coinsLocation.forEach((location, index) => {
+            //   const scale = 10;
+            //   const options = {
+            //     obj: "/assets/coin.glb", // Replace with a 3D coin model URL
+            //     type: "gltf",
+            //     scale: { x: scale, y: scale, z: scale },
+            //     units: "meters",
+            //   };
+
+            //   window.tb.loadObj(options, (model: any) => {
+            //     model.setCoords([location.longitude, location.latitude]);
+            //     model.setRotation({ x: 90, y: 0, z: index * 45 }); // Rotate each coin for variety
+            //     model.userData = { id: `coin-${index}`, location };
+
+            //     window.tb.add(model);
+            //     model.addEventListener("click", () => {
+            //       console.log(`Coin ${index + 1} clicked at`, location);
+            //       alert(`You clicked on coin ${index + 1}!`);
+            //     });
+            //   });
+            // });
+
             coinsLocation.forEach((location, index) => {
-              const scale = 10;
-              const options = {
-                obj: "/assets/coin.glb", // Replace with a 3D coin model URL
-                type: "gltf",
-                scale: { x: scale, y: scale, z: scale },
-                units: "meters",
-              };
+              const el = document.createElement("div");
+              const width = 40; // Customize marker size
+              const height = 40;
+              el.className = "marker";
+              el.style.backgroundImage = `url(https://picsum.photos/seed/coin-${index}/40/40)`; // Replace with your coin icon URL
+              el.style.width = `${width}px`;
+              el.style.height = `${height}px`;
+              el.style.backgroundSize = "100%";
+              el.style.border = "none";
+              el.style.borderRadius = "50%";
+              el.style.cursor = "pointer";
 
-              window.tb.loadObj(options, (model: any) => {
-                model.setCoords([location.longitude, location.latitude]);
-                model.setRotation({ x: 90, y: 0, z: index * 45 }); // Rotate each coin for variety
-                model.userData = { id: `coin-${index}`, location };
-
-                window.tb.add(model);
-                model.addEventListener("click", () => {
-                  console.log(`Coin ${index + 1} clicked at`, location);
-                  alert(`You clicked on coin ${index + 1}!`);
-                });
+              el.addEventListener("click", () => {
+                console.log(`Coin ${index + 1} clicked at`, location);
+                alert(`You clicked on coin ${index + 1}!`);
               });
+
+              new mapboxgl.Marker(el)
+                .setLngLat([location.longitude, location.latitude])
+                .addTo(mapRef.current);
             });
           },
           render: () => {
@@ -151,7 +215,8 @@ const MapBox: React.FC = () => {
         navigator.geolocation.watchPosition(
           (position) => {
             const { longitude, latitude, heading } = position.coords;
-            console.log(`${longitude}, ${latitude}, ${heading}`);
+            setCurrentPosition({ latitude, longitude });
+            checkNearestCoin(latitude, longitude);
             // Update model position
             if (userModelRef.current) {
               userModelRef.current.setCoords([longitude, latitude]);
@@ -206,7 +271,6 @@ const MapBox: React.FC = () => {
       initializeMap({ longitude: 100.5018, latitude: 13.7563 });
     }
 
-    // Cleanup function
     return () => {
       clearTimeout(locationTimeout);
       if (mapRef.current) {
@@ -215,11 +279,46 @@ const MapBox: React.FC = () => {
     };
   }, []);
 
+  const handleCollectCoin = () => {
+    if (nearestCoin) {
+      const coin = coinsLocation[nearestCoin.index];
+      console.log({ coin, nearestCoin });
+      navigate("/ar", {
+        state: {
+          coin: {
+            index: nearestCoin.index,
+            latitude: coin.latitude,
+            longitude: coin.longitude,
+          },
+          userPosition: currentPosition,
+          distance: nearestCoin.distance,
+        },
+      });
+    }
+  };
+
   return (
-    <div
-      style={{ width: "100%", height: "100vh", border: "2px solid red" }}
-      ref={mapContainerRef}
-    />
+    <div style={{ width: "100%", height: "100vh" }} ref={mapContainerRef}>
+      {nearestCoin?.index !== -1 && (
+        <button
+          onClick={handleCollectCoin}
+          style={{
+            position: "fixed",
+            bottom: "10%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 1000,
+            padding: "10px 20px",
+            backgroundColor: "black",
+            color: "white",
+            borderRadius: "10px",
+            fontSize: "16px",
+          }}
+        >
+          Collect Coin
+        </button>
+      )}
+    </div>
   );
 };
 
