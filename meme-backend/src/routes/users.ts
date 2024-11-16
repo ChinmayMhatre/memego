@@ -1,9 +1,10 @@
 // @ts-nocheck
 import express from 'express';
-import { createUserObject, getUser } from '../controller/user';
+import { createUserObject, getUser, addClaimedPoints } from '../controller/user';
 const router = express.Router();
 
 router.post('/', createUserObject);
-router.get('/:id', getUser);
+router.get('/:walletAddress', getUser);
+router.post('/:walletAddress/points', addClaimedPoints);
 
 export default router;

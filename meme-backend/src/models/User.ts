@@ -12,10 +12,10 @@ interface IUser {
 }
 
 interface Claim {
-    latitude: number;
-    longitude: number;
-    timestamp: Date;
-    amount: number;
+  latitude: number;
+  longitude: number;
+  timestamp: Date;
+  amount: number;
 }
 
 const userSchema = new mongoose.Schema<IUser>({
@@ -29,6 +29,7 @@ const userSchema = new mongoose.Schema<IUser>({
       coinType: { type: String, required: true },
       coinAddress: { type: String, required: true },
       points: [{
+        id: { type: String, required: true },
         lat: { type: Number, required: true },
         lng: { type: Number, required: true }
       }]
