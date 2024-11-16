@@ -176,25 +176,39 @@ const MapBox: React.FC = () => {
       });
     };
 
-    if (navigator.geolocation) {
-      locationWatchId.current = navigator.geolocation.watchPosition(function (
-        position
-      ) {
-        initializeMap({
-          longitude: position.coords.longitude,
-          latitude: position.coords.latitude,
-          heading: position.coords.heading,
-        });
-      });
+    // Initialize with the current or default location
+    const timeoutDuration = 5000; // 5 seconds timeout
+    let locationTimeout: ReturnType<typeof setTimeout>;
+
+    if ("geolocation" in navigator) {
+      locationTimeout = setTimeout(() => {
+        console.log("Geolocation timed out, using default location");
+        initializeMap({ longitude: 100.5018, latitude: 13.7563 }); // Default Bangkok location
+      }, timeoutDuration);
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          clearTimeout(locationTimeout);
+          initializeMap({
+            longitude: position.coords.longitude,
+            latitude: position.coords.latitude,
+          });
+        },
+        (error) => {
+          clearTimeout(locationTimeout);
+          console.warn("Geolocation error:", error);
+          initializeMap({ longitude: 100.5018, latitude: 13.7563 });
+        },
+        { timeout: timeoutDuration }
+      );
+    } else {
+      console.log("Geolocation not supported, using default location");
+      initializeMap({ longitude: 100.5018, latitude: 13.7563 });
     }
 
+    // Cleanup function
     return () => {
-      const { geolocation } = navigator;
-
-      if (locationWatchId?.current && geolocation) {
-        geolocation.clearWatch(locationWatchId.current);
-      }
-
+      clearTimeout(locationTimeout);
       if (mapRef.current) {
         mapRef.current.remove();
       }
