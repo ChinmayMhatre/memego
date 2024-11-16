@@ -32,11 +32,11 @@ export const getUser = async (req: Request, res: Response) => {
   try {
     const db = getDb();
     const userRef = db.collection('users');
-    const userDoc = await userRef.doc(req.params.id).get();
-    if (!userDoc.exists) {
+    const user = await userRef.where('walletAddress', '==', req.params.walletAddress).get();
+    if (!user.empty) {
       return res.status(404).json({ message: 'User not found' });
     }
-    return res.status(200).json({ id: userDoc.id, ...userDoc.data() });
+    return res.status(200).json({ userData: user.docs[0].data() });
   } catch (error) {
     console.error('Error fetching user:', error);
     return res.status(500).json({ message: 'Internal server error' });
