@@ -18,11 +18,11 @@ const Dashboard = () => {
     }
 
   return (
-    <div className=' p-7  bg-slate-100 w-full'>
+    <div className=' p-7  bg-gradient w-full'>
         <div className="flex justify-between items-center">
-        <h1 className='text-xl font-bold'>Welcome Back, <span className='text-blue-600 text-2xl '>John Pork</span></h1>
-        <Button onClick={handleLogout}>
-            <LogOut className='w-4 h-4'/>
+        <h1 className='text-xl font-bold text-white'>Welcome Back, <span className='text-blue-600 text-2xl '>John Pork</span></h1>
+        <Button onClick={handleLogout} variant={'outline'}>
+            <LogOut className='w-4 h-4 text-black'/>
         </Button>
         </div>
     <div className="flex pt-8 justify-center gap-4">
@@ -31,13 +31,13 @@ const Dashboard = () => {
             <p className='text-lg font-bold'>$100</p>
         </div>
     </div>
-    <h2 className='text-lg font-bold mt-4'>Your Memecoins</h2>
+    <h2 className='text-lg text-white font-bold mt-4'>Your Memecoins</h2>
     <div className="bg-white rounded-lg mt-2 pb-4 px-2">
         {
             Array.from({length: 10}).map((_, index) => (        
         <div className="flex justify-between pt-4 px-4 items-center">
             <div className="flex items-center gap-2">
-                <div className="h-8 w-8 bg-blue-600 rounded-full"></div>
+                <div className="h-8 w-8 bg-green-400 rounded-full"></div>
                 <div className="flex flex-col">
                     <p className=' font-bold'>Memecoins</p>
                     <p className='text-sm text-gray-500'>0x1234567890</p>
