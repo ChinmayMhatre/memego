@@ -1,14 +1,16 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./Login";
 import "./App.css";
-import MapBox from "./components/Mapbox";
-import AR from "./components/AR";
+import Mapbox from "./components/MapBox";
+
 function App() {
   return (
-    <>
-      <div style={{ width: "99vw", height: "99vh", border: "2px solid red" }}>
-        {/* <MapBox /> */}
-        <AR />
-      </div>
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Mapbox />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
