@@ -1,12 +1,21 @@
 import { Request, Response } from 'express';
 import { ethers } from 'ethers';
-import { User } from '../models/User';
-// import CONTRACT_ABI from '../smart-contract/memego.json';
+import dotenv from 'dotenv';
+import { getDb } from '../config/database';
 
+dotenv.config();
+
+// ERC20 ABI for transfer function
+const ERC20_ABI = [
+    "function transfer(address to, uint256 amount) returns (bool)",
+    "function balanceOf(address account) view returns (uint256)",
+    "function decimals() view returns (uint8)"
+];
 
 interface Location {
     latitude: number;
     longitude: number;
+    id: string;
 }
 
 interface AuthenticatedRequest extends Request {
@@ -15,40 +24,41 @@ interface AuthenticatedRequest extends Request {
     };
 }
 
-// Initialize provider and contract
-// const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-// const contract = new ethers.Contract(
-//     process.env.DISTRIBUTOR_CONTRACT_ADDRESS!,
-//     CONTRACT_ABI,
-//     new ethers.Wallet(process.env.PRIVATE_KEY!, provider)
-// );
-
 export async function sendMemeCoins(req: AuthenticatedRequest, res: Response) {
     try {
-        const { walletAddress, latitude, longitude } = req.body;
+        const { walletAddress, lat, lng, id, coinType } = req.body;
         
-        if (!walletAddress || !latitude || !longitude) {
+        if (!walletAddress || !lat || !lng || !id || !coinType) {
             return res.status(400).json({ error: 'Missing required parameters' });
         }
 
         // fetch user object from database
-        const user = await User.findOne({ walletAddress });
+        const db = getDb();
+        const userRef = db.collection('users');
+        const user =  await userRef.where('walletAddress', '==', walletAddress).get();
 
-        // check if claimPoints include the lat and long of the location. If yes then return error cannot claim again at this location
-        const hasClaimedAtLocation = user?.claimedPoints?.some(coinClaim => 
-            coinClaim.points.some(point => point.lat === latitude && point.lng === longitude)
-        );
+        // check if user exists
+        if (user.empty) {
+            return res.status(404).json({ 
+                error: 'User not found' 
+            });
+        }
 
-        if (hasClaimedAtLocation) {
+        console.log(user.docs[0].data().$push.claimedPoints);
+
+        // check if claimPoints include the lat and long of the location. If yes then return error cannot claim again at this location. ClaimPoints is an object.
+        const claimedAtLocationPoints = user.docs[0].data().$push.claimedPoints.points;
+
+        if (claimedAtLocationPoints.some((point: any) => point.lat === lat && point.lng === lng && point.id === id)) {
             return res.status(400).json({ 
                 error: 'You have already claimed coins at this location' 
             });
         }
 
         // Check if the lat and long are valid in json file
-        const pointsData = require('../data/points.json');
+        const pointsData = require('../../data/points.json');
 
-        const validPoints = pointsData.points.some((point: { lat: number; lng: number; }) => point.lat === latitude && point.lng === longitude);
+        const validPoints = pointsData.some((point: { lat: number; lng: number; id: string }) => point.lat === lat && point.lng === lng && point.id === id);
 
         if (!validPoints) {
             return res.status(404).json({ 
@@ -57,29 +67,54 @@ export async function sendMemeCoins(req: AuthenticatedRequest, res: Response) {
         }
 
         // Send tokens using the distributor contract
-        const amount = ethers.parseEther(pointsData.amount.toString());
-        // const tx = await contract.distributeMemeCoin(
-        //     process.env.MEME_TOKEN_ADDRESS!, // The address of your meme token
-        //     walletAddress,
-        //     amount
-        // );
-        // await tx.wait();
+
+         // Create wallet
+         const provider = new ethers.JsonRpcProvider(process.env.ARBITRUM_RPC_URL);
+         const privateKey = process.env.PRIVATE_KEY;
+         
+         if (!privateKey) {
+             throw new Error('Private key not configured');
+         }
+
+
+        const wallet = new ethers.Wallet(privateKey, provider);
+
+         // Create contract instance for the ERC20 token
+
+        
+        const coinAddress = pointsData.find((point: { id: string }) => point.id === id)?.coinAddress;
+        const amount = pointsData.find((point: { id: string }) => point.id === id)?.amountToSend;
+
+        const tokenContract = new ethers.Contract(coinAddress, ERC20_ABI, wallet);
+
+        // Get token decimals
+        const decimals = await tokenContract.decimals();
+        
+        // Convert amount to token units
+        const tokenAmount = ethers.parseUnits(amount.toString(), decimals);
+
+        // Send transaction
+        const tx = await tokenContract.transfer(walletAddress, tokenAmount);
+        
+        // Wait for transaction confirmation
+        const receipt = await tx.wait();
+
 
         // Update user's claim history
-        await User.findByIdAndUpdate(user?._id, {
+        await userRef.doc(user.docs[0].id).update({
             $push: {
                 claimedPoints: {
-                    coinType: 'MEME',
-                    coinAddress: process.env.MEME_TOKEN_ADDRESS!,
-                    points: [{ lat: latitude, lng: longitude }]
+                    coinType: coinType,
+                    coinAddress: coinAddress,
+                    points: [{ lat: lat, lng: lng, id: id }]
                 }
             }
         });
 
         return res.status(200).json({
             success: true,
-            // transaction: tx.hash,
-            amount: pointsData.amount
+            transaction: tx.hash,
+            message: `Successfully sent ${tokenAmount} tokens to ${walletAddress}`
         });
 
     } catch (error) {

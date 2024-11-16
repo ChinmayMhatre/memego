@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 interface ClaimedPoints {
   coinType: string;
   coinAddress: string;
-  points: { lat: number; lng: number }[];
+  points: { lat: number; lng: number, id: string }[];
 }
 
 interface IUser {
