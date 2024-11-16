@@ -1,9 +1,30 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Button } from './components/ui/button'
+import { LogOut } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { usePrivy } from '@privy-io/react-auth'
 const Dashboard = () => {
+    const { authenticated, ready, logout } = usePrivy()
+    const navigate = useNavigate()
+    useEffect(() => {
+        if (!authenticated && ready) {
+            navigate('/login')
+        }
+    }, [authenticated, ready, navigate])
+
+    const handleLogout = () => {
+        logout()
+        navigate('/login')
+    }
+
   return (
-    <div className=' p-7 h-screen bg-slate-100 w-full'>
+    <div className=' p-7  bg-slate-100 w-full'>
+        <div className="flex justify-between items-center">
         <h1 className='text-xl font-bold'>Welcome Back, <span className='text-blue-600 text-2xl '>John Pork</span></h1>
+        <Button onClick={handleLogout}>
+            <LogOut className='w-4 h-4'/>
+        </Button>
+        </div>
     <div className="flex pt-8 justify-center gap-4">
         <div className="p-4 w-full bg-white flex justify-between items-center rounded-lg">
             <h1 className='text-lg font-bold text-blue-600'>Portfolio Value</h1>

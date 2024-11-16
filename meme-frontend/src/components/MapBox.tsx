@@ -1,8 +1,10 @@
 /* eslint-disable */
-import { useEffect, useRef } from "react";
+import React,{ useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import { Threebox } from "threebox-plugin";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { usePrivy } from "@privy-io/react-auth";
+import { useNavigate } from "react-router-dom";
 
 declare global {
   interface Window {
@@ -23,6 +25,19 @@ const MapBox: React.FC = () => {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const userModelRef = useRef<any>(null);
   const locationWatchId = useRef<number | null>(null);
+
+  const { authenticated, ready, logout } = usePrivy()
+  const navigate = useNavigate()
+  useEffect(() => {
+      if (!authenticated && ready) {
+          navigate('/login')
+      }
+  }, [authenticated, ready, navigate])
+
+  const handleLogout = () => {
+      logout()
+      navigate('/login')
+  }
 
   const requestPermission1 = () => {
     if (
