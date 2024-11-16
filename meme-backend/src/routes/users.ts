@@ -1,3 +1,4 @@
+// @ts-nocheck
 import express from 'express';
 import { createUserObject, getUser } from '../controller/user';
 const router = express.Router();

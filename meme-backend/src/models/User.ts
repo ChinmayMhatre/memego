@@ -35,13 +35,7 @@ const userSchema = new mongoose.Schema<IUser>({
     }],
     default: [],
     required: false,
-  },
-  claims: [{
-    latitude: Number,
-    longitude: Number,
-    timestamp: Date,
-    amount: Number
-  }]
+  }
 }, {
   timestamps: true,
 });

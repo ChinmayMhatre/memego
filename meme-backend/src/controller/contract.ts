@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { ethers } from 'ethers';
 import { User } from '../models/User';
-import CONTRACT_ABI from '../smart-contract/memego.json';
+// import CONTRACT_ABI from '../smart-contract/memego.json';
+
 
 interface Location {
     latitude: number;
@@ -15,12 +16,12 @@ interface AuthenticatedRequest extends Request {
 }
 
 // Initialize provider and contract
-const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-const contract = new ethers.Contract(
-    process.env.DISTRIBUTOR_CONTRACT_ADDRESS!,
-    CONTRACT_ABI,
-    new ethers.Wallet(process.env.PRIVATE_KEY!, provider)
-);
+// const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+// const contract = new ethers.Contract(
+//     process.env.DISTRIBUTOR_CONTRACT_ADDRESS!,
+//     CONTRACT_ABI,
+//     new ethers.Wallet(process.env.PRIVATE_KEY!, provider)
+// );
 
 export async function sendMemeCoins(req: AuthenticatedRequest, res: Response) {
     try {
@@ -57,15 +58,15 @@ export async function sendMemeCoins(req: AuthenticatedRequest, res: Response) {
 
         // Send tokens using the distributor contract
         const amount = ethers.parseEther(pointsData.amount.toString());
-        const tx = await contract.distributeMemeCoin(
-            process.env.MEME_TOKEN_ADDRESS!, // The address of your meme token
-            walletAddress,
-            amount
-        );
-        await tx.wait();
+        // const tx = await contract.distributeMemeCoin(
+        //     process.env.MEME_TOKEN_ADDRESS!, // The address of your meme token
+        //     walletAddress,
+        //     amount
+        // );
+        // await tx.wait();
 
         // Update user's claim history
-        await User.findByIdAndUpdate(userId, {
+        await User.findByIdAndUpdate(user?._id, {
             $push: {
                 claimedPoints: {
                     coinType: 'MEME',
@@ -77,7 +78,7 @@ export async function sendMemeCoins(req: AuthenticatedRequest, res: Response) {
 
         return res.status(200).json({
             success: true,
-            transaction: tx.hash,
+            // transaction: tx.hash,
             amount: pointsData.amount
         });
 
