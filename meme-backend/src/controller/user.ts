@@ -31,7 +31,8 @@ export const getUser = async (req: Request, res: Response) => {
   // Get user by wallet address
   try {
     const db = getDb();
-    const userDoc = await db.collection('users').doc(req.params.id).get();
+    const userRef = db.collection('users');
+    const userDoc = await userRef.doc(req.params.id).get();
     if (!userDoc.exists) {
       return res.status(404).json({ message: 'User not found' });
     }

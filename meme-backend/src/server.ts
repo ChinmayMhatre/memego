@@ -2,7 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import "dotenv/config";
 import usersRouter from './routes/users';
+import pointsRouter from './routes/points';
 import { connectDB } from './config/database';
+import contractRouter from './routes/contract';
 
 const app = express();
 app.use(express.json({ limit: "3mb" }));
@@ -16,7 +18,10 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-app.use('/api', usersRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/points', pointsRouter);
+app.use('/api/contract', contractRouter);
+
 
 // Modified server startup to include database connection
 const startServer = async () => {
