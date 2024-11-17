@@ -27,7 +27,7 @@ interface AuthenticatedRequest extends Request {
 export async function sendMemeCoins(req: AuthenticatedRequest, res: Response) {
     try {
         const { walletAddress, lat, lng, id, coinType } = req.body;
-        
+
         if (!walletAddress || !lat || !lng || !id || !coinType) {
             return res.status(400).json({ error: 'Missing required parameters' });
         }
@@ -35,61 +35,54 @@ export async function sendMemeCoins(req: AuthenticatedRequest, res: Response) {
         // fetch user object from database
         const db = getDb();
         const userRef = db.collection('users');
-        const user =  await userRef.where('walletAddress', '==', walletAddress).get();
+        const user = await userRef.where('walletAddress', '==', walletAddress).get();
 
         // check if user exists
         if (user.empty) {
-            return res.status(404).json({ 
-                error: 'User not found' 
+            return res.status(404).json({
+                error: 'User not found'
             });
         }
 
 
         // check if claimPoints exists if not then create empty array
-        if (!user.docs[0].data().$push.claimedPoints) {
+        if (!user.docs[0].data()?.claimedPoints) {
             await userRef.doc(user.docs[0].id).update({
-                $set: {
-                    claimedPoints: []
-                }
+                claimedPoints: []
             });
         }
 
+
+
         // check if claimPoints include the lat and long of the location. If yes then return error cannot claim again at this location. ClaimPoints is an object.
-        const claimedAtLocationPoints = user.docs[0].data().$push.claimedPoints.points;
+        const claimedAtLocationPoints = user.docs[0].data()?.claimedPoints?.points ?? [];
 
         if (claimedAtLocationPoints.some((point: any) => point.lat === lat && point.lng === lng && point.id === id)) {
-            return res.status(400).json({ 
-                error: 'You have already claimed coins at this location' 
+            return res.status(400).json({
+                error: 'You have already claimed coins at this location'
             });
         }
 
         // Check if the lat and long are valid in json file
         const pointsData = require('../../data/points.json');
 
-        const validPoints = pointsData.some((point: { lat: number; lng: number; id: string }) => point.lat === lat && point.lng === lng && point.id === id);
-
-        if (!validPoints) {
-            return res.status(404).json({ 
-                error: 'No meme coins available at this location' 
-            });
-        }
 
         // Send tokens using the distributor contract
 
-         // Create wallet
-         const provider = new ethers.JsonRpcProvider(process.env.ARBITRUM_RPC_URL);
-         const privateKey = process.env.PRIVATE_KEY;
-         
-         if (!privateKey) {
-             throw new Error('Private key not configured');
-         }
+        // Create wallet
+        const provider = new ethers.JsonRpcProvider(process.env.ARBITRUM_RPC_URL);
+        const privateKey = process.env.PRIVATE_KEY;
+
+        if (!privateKey) {
+            throw new Error('Private key not configured');
+        }
 
 
         const wallet = new ethers.Wallet(privateKey, provider);
 
-         // Create contract instance for the ERC20 token
+        // Create contract instance for the ERC20 token
 
-        
+
         const coinAddress = pointsData.find((point: { id: string }) => point.id === id)?.coinAddress;
         const amount = pointsData.find((point: { id: string }) => point.id === id)?.amountToSend;
 
@@ -97,25 +90,23 @@ export async function sendMemeCoins(req: AuthenticatedRequest, res: Response) {
 
         // Get token decimals
         const decimals = await tokenContract.decimals();
-        
+
         // Convert amount to token units
         const tokenAmount = ethers.parseUnits(amount.toString(), decimals);
 
         // Send transaction
         const tx = await tokenContract.transfer(walletAddress, tokenAmount);
-        
+
         // Wait for transaction confirmation
         const receipt = await tx.wait();
 
 
         // Update user's claim history
-        await userRef.doc(user.docs[0].id).update({
-            $push: {
-                claimedPoints: {
-                    coinType: coinType,
-                    coinAddress: coinAddress,
-                    points: [{ lat: lat, lng: lng, id: id }]
-                }
+        await userRef.doc(user.docs[0].id).update( {
+            claimedPoints: {
+                coinType: coinType,
+                coinAddress: coinAddress,
+                points: [{ lat: lat, lng: lng, id: id }]
             }
         });
 
@@ -127,8 +118,8 @@ export async function sendMemeCoins(req: AuthenticatedRequest, res: Response) {
 
     } catch (error) {
         console.error('Error sending meme coins:', error);
-        return res.status(500).json({ 
-            error: 'Failed to send meme coins' 
+        return res.status(500).json({
+            error: 'Failed to send meme coins'
         });
     }
 }
