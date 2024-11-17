@@ -44,7 +44,15 @@ export async function sendMemeCoins(req: AuthenticatedRequest, res: Response) {
             });
         }
 
-        console.log(user.docs[0].data().$push.claimedPoints);
+
+        // check if claimPoints exists if not then create empty array
+        if (!user.docs[0].data().$push.claimedPoints) {
+            await userRef.doc(user.docs[0].id).update({
+                $set: {
+                    claimedPoints: []
+                }
+            });
+        }
 
         // check if claimPoints include the lat and long of the location. If yes then return error cannot claim again at this location. ClaimPoints is an object.
         const claimedAtLocationPoints = user.docs[0].data().$push.claimedPoints.points;
